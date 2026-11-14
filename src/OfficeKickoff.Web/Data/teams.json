@@ -1,0 +1,154 @@
+[
+  {
+    "presetId": "inbox-zero",
+    "name": "Inbox Zero FC",
+    "code": "INB",
+    "primary": "#f4f6fb",
+    "secondary": "#1f4fbf",
+    "keeper": "#ff9f1c",
+    "crest": "shield",
+    "formation": "2-2",
+    "roster": [
+      { "name": "Mirela Ostrander", "number": 1 },
+      { "name": "Kwabena Ashwell", "number": 3 },
+      { "name": "Hugo Belvane", "number": 5 },
+      { "name": "Priya Vallurkar", "number": 6 },
+      { "name": "Tomasz Krelinski", "number": 8 },
+      { "name": "Ines Carbayo", "number": 10 },
+      { "name": "Desmond Fairlow", "number": 9 }
+    ]
+  },
+  {
+    "presetId": "coffee-machine",
+    "name": "Coffee Machine Rovers",
+    "code": "COF",
+    "primary": "#6f4326",
+    "secondary": "#f3dfb8",
+    "keeper": "#2ec4e6",
+    "crest": "circle",
+    "formation": "1-2-1",
+    "roster": [
+      { "name": "Bartholomew Quill", "number": 1 },
+      { "name": "Amara Nwachuku-Hale", "number": 2 },
+      { "name": "Lorenzo Brevetti", "number": 4 },
+      { "name": "Saoirse Delahunt", "number": 6 },
+      { "name": "Yusuf Kahverengi", "number": 7 },
+      { "name": "Mei Tanabe-Ross", "number": 11 },
+      { "name": "Ruben Mokara", "number": 9 }
+    ]
+  },
+  {
+    "presetId": "standup",
+    "name": "Standup Athletic",
+    "code": "STA",
+    "primary": "#ffcd1f",
+    "secondary": "#161616",
+    "keeper": "#e0218a",
+    "crest": "star",
+    "formation": "1-3",
+    "roster": [
+      { "name": "Gunnar Stavely", "number": 1 },
+      { "name": "Fatou Diallo-Brandt", "number": 2 },
+      { "name": "Callum Prestwick", "number": 5 },
+      { "name": "Ana Lucia Ferraz", "number": 6 },
+      { "name": "Jonas Vickery", "number": 8 },
+      { "name": "Rahul Mehtani", "number": 10 },
+      { "name": "Zofia Kanbanowska", "number": 9 }
+    ]
+  },
+  {
+    "presetId": "deadline",
+    "name": "Deadline Wanderers",
+    "code": "DDL",
+    "primary": "#d7263d",
+    "secondary": "#ffffff",
+    "keeper": "#22b8a6",
+    "crest": "bolt",
+    "formation": "3-1",
+    "roster": [
+      { "name": "Oskar Lindqvar", "number": 1 },
+      { "name": "Temi Adebanjo-Cross", "number": 3 },
+      { "name": "Marcus Lateby", "number": 4 },
+      { "name": "Chiara Pellacani", "number": 6 },
+      { "name": "Minh Duc Laurent", "number": 7 },
+      { "name": "Esteban Vidaurre", "number": 10 },
+      { "name": "Niamh Tardiff", "number": 9 }
+    ]
+  },
+  {
+    "presetId": "spreadsheet",
+    "name": "Spreadsheet City",
+    "code": "SHT",
+    "primary": "#5bb4ff",
+    "secondary": "#0c2b4b",
+    "keeper": "#ffd23f",
+    "crest": "hexagon",
+    "formation": "2-2",
+    "roster": [
+      { "name": "Viktor Cellmann", "number": 1 },
+      { "name": "Aisha Rowcliffe", "number": 2 },
+      { "name": "Pieter van Kolom", "number": 4 },
+      { "name": "Haruto Sumida", "number": 5 },
+      { "name": "Grace Pivotell", "number": 8 },
+      { "name": "Mateo Celdas", "number": 10 },
+      { "name": "Leilani Macroft", "number": 9 }
+    ]
+  },
+  {
+    "presetId": "printer-jam",
+    "name": "Printer Jam United",
+    "code": "PJU",
+    "primary": "#1e2a5a",
+    "secondary": "#ff2e88",
+    "keeper": "#b6ff3c",
+    "crest": "diamond",
+    "formation": "1-2-1",
+    "roster": [
+      { "name": "Reginald Toner", "number": 1 },
+      { "name": "Bongani Mthembu-Reed", "number": 3 },
+      { "name": "Elif Kartal", "number": 4 },
+      { "name": "Dmitri Feedwell", "number": 6 },
+      { "name": "Rosa Inkster", "number": 7 },
+      { "name": "Kofi Staplehurst", "number": 11 },
+      { "name": "Lucia Trayford", "number": 9 }
+    ]
+  },
+  {
+    "presetId": "meeting-room",
+    "name": "Meeting Room Albion",
+    "code": "MRA",
+    "primary": "#7b2cbf",
+    "secondary": "#f7c948",
+    "keeper": "#4cc9f0",
+    "crest": "crown",
+    "formation": "2-2",
+    "roster": [
+      { "name": "Agnieszka Rota", "number": 1 },
+      { "name": "Benedict Agendall", "number": 2 },
+      { "name": "Oluwaseun Boardman", "number": 5 },
+      { "name": "Freya Calloway", "number": 6 },
+      { "name": "Sanjay Roomsby", "number": 8 },
+      { "name": "Thiago Pauta", "number": 10 },
+      { "name": "Mariam Quorrell", "number": 9 }
+    ]
+  },
+  {
+    "presetId": "wifi",
+    "name": "Wi-Fi Rangers",
+    "code": "WFR",
+    "primary": "#ff7a00",
+    "secondary": "#10233f",
+    "keeper": "#00c2a8",
+    "crest": "chevron",
+    "formation": "1-3",
+    "roster": [
+      { "name": "Henrik Signalsen", "number": 1 },
+      { "name": "Yaw Antwi-Lanford", "number": 3 },
+      { "name": "Camille Routier", "number": 4 },
+      { "name": "Ravi Pingale", "number": 5 },
+      { "name": "Siobhan Meshwick", "number": 7 },
+      { "name": "Nikolai Ethernov", "number": 10 },
+      { "name": "Paloma Latencia", "number": 9 }
+    ]
+  }
+]

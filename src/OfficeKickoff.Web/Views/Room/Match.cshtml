@@ -1,0 +1,20 @@
+@model OfficeKickoff.Web.Models.RoomPageModel
+@{
+    ViewData["Title"] = $"Match {Model.Code}";
+    ViewData["BodyClass"] = "page-match";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/match.css" />
+}
+
+@* The whole match UI is built by js/game/main.js: the canvas is the pitch, #hud holds the DOM overlays. *@
+<main id="app" data-room="@Model.Code">
+    <canvas id="game" aria-label="Football pitch"></canvas>
+    <div id="hud"></div>
+</main>
+<noscript>Office Kickoff needs JavaScript to run.</noscript>
+
+@section Scripts {
+    <script type="module" src="~/js/game/main.js"></script>
+}

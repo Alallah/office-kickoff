@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AspNetCoreHostingModel>InProcess</AspNetCoreHostingModel>
+    <!-- In-process IIS hosting needs the AspNetCoreModuleV2 handler from the .NET Hosting Bundle. -->
+    <AspNetCoreModuleName>AspNetCoreModuleV2</AspNetCoreModuleName>
+    <!-- Overridable so a build can point at a different copy of the simulation project. -->
+    <SimProjectPath Condition="'$(SimProjectPath)' == ''">..\OfficeKickoff.Sim\OfficeKickoff.Sim.csproj</SimProjectPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(SimProjectPath)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Team presets are read from disk at start-up, so an administrator can edit them after deployment. -->
+    <Content Update="Data\teams.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <!-- Development-time client library manifest; the library itself is already in wwwroot/lib. -->
+    <Content Update="libman.json" CopyToPublishDirectory="Never" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="OfficeKickoff.Web.Tests" />
+  </ItemGroup>
+
+</Project>

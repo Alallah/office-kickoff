@@ -1,0 +1,113 @@
+/* =====================================================================================
+   Design tokens shared by every page. site.css (home, lobby) and match.css (in-game HUD)
+   build on these and must not redefine them.
+
+   Look: night match under floodlights. Deep navy surfaces, floodlit-lime primary accent,
+   cyan secondary accent, condensed sporty display type. No web fonts (the game may run on
+   an office network with no internet): Bahnschrift ships with Windows 10+, with fallbacks.
+   ===================================================================================== */
+
+:root {
+  color-scheme: dark;
+
+  /* surfaces */
+  --bg: #070b16;
+  --bg-2: #0d1426;
+  --surface: #121a30;
+  --surface-2: #19233f;
+  --surface-3: #22305a;
+  --glass: rgba(16, 24, 46, 0.78);
+  --line: rgba(255, 255, 255, 0.09);
+  --line-strong: rgba(255, 255, 255, 0.18);
+
+  /* text */
+  --text: #eef3ff;
+  --text-dim: #a9b6d6;
+  --text-faint: #6f7ea6;
+
+  /* accents */
+  --accent: #b6ff3c;          /* floodlit lime: primary actions, "you" */
+  --accent-ink: #0b1400;      /* text on accent */
+  --accent-2: #2ee6ff;        /* cyan: secondary highlights */
+  --gold: #ffd166;            /* MVP, golden goal */
+  --danger: #ff4d6d;
+  --warn: #ffb020;
+  --ok: #4ade80;
+
+  /* team sides (defaults; real kit colours come from the server) */
+  --home: #3b82f6;
+  --away: #f43f5e;
+
+  /* pitch */
+  --pitch: #17603a;
+  --pitch-2: #1b6e43;
+
+  /* type */
+  --font: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Bahnschrift", "DIN Alternate", "Oswald", "Arial Narrow", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "Cascadia Mono", "Consolas", ui-monospace, monospace;
+
+  /* shape */
+  --radius-s: 8px;
+  --radius: 14px;
+  --radius-l: 22px;
+  --shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+  --shadow-s: 0 6px 18px rgba(0, 0, 0, 0.35);
+  --glow: 0 0 24px rgba(182, 255, 60, 0.35);
+
+  /* motion */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --t-fast: 120ms;
+  --t: 220ms;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Display type: condensed, upper case, tight. Use for headings, scores, big buttons. */
+.display {
+  font-family: var(--font-display);
+  font-stretch: 78%;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+.crest {
+  display: block;
+  flex: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

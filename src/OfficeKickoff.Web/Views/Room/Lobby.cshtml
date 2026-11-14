@@ -1,0 +1,22 @@
+@model OfficeKickoff.Web.Models.RoomPageModel
+@{
+    ViewData["Title"] = $"Lobby {Model.Code}";
+    ViewData["BodyClass"] = "page-lobby";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/site.css" />
+}
+
+@* js/lobby/lobby.js joins the room and replaces everything inside #app with the lobby. *@
+<main id="app" class="lobby" data-room="@Model.Code">
+    <div class="lobby-loading" role="status">
+        <span class="ball-loader" aria-hidden="true"></span>
+        <p class="display">Joining room <strong>@Model.Code</strong></p>
+    </div>
+</main>
+<noscript><p class="noscript">Office Kickoff needs JavaScript to run.</p></noscript>
+
+@section Scripts {
+    <script type="module" src="~/js/lobby/lobby.js"></script>
+}

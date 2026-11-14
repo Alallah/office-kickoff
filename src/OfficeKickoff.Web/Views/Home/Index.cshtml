@@ -1,0 +1,174 @@
+﻿@model OfficeKickoff.Web.Models.HomeViewModel
+@{
+    ViewData["Title"] = "Two-a-side office football";
+    ViewData["BodyClass"] = "page-home";
+
+    // A room code is four letters. Anything else that arrives in the query string is dropped, never echoed.
+    var roomCode = (Model?.Code ?? "").Trim().ToUpperInvariant();
+    if (roomCode.Length != 4 || !roomCode.All(c => c is >= 'A' and <= 'Z'))
+    {
+        roomCode = "";
+    }
+
+    var problem = Model?.Error;
+    var hasProblem = problem is "notfound" or "closed" or "full" or "busy" or "replaced";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/site.css" />
+}
+
+<main id="home" class="home">
+    @* The little match that plays by itself beside the hero (js/home.js). Purely decorative. *@
+    <canvas id="pitch-bg" class="home-pitch" aria-hidden="true"></canvas>
+
+    <section class="hero" aria-labelledby="wordmark">
+        <h1 class="wordmark display" id="wordmark" aria-label="Office Kickoff">
+            <span class="wordmark-top" aria-hidden="true">Office</span>
+            <span class="wordmark-main" aria-hidden="true">Kick<svg class="wordmark-ball" viewBox="11 11 42 42" focusable="false">
+                    <circle cx="32" cy="32" r="19" fill="#f4f7ff" />
+                    <path d="M32 21l9.5 6.9-3.6 11.2H26.1l-3.6-11.2z" fill="#0d1426" />
+                    <path d="M32 13v8M50 27l-8.5.9M43.5 47.5l-5.6-8.4M20.5 47.5l5.6-8.4M14 27l8.5.9" stroke="#0d1426" stroke-width="2.6" stroke-linecap="round" fill="none" />
+                    <circle cx="32" cy="32" r="19" fill="none" stroke="#b6ff3c" stroke-width="3" />
+                </svg>ff</span>
+        </h1>
+        <p class="hero-tagline">
+            Two-a-side online football for your office. Grab a colleague, pick your shirts
+            and settle it before the next meeting.
+        </p>
+
+        @if (hasProblem)
+        {
+            <div class="home-alert" id="home-alert" role="alert">
+                <svg class="home-alert-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+                    <path d="M12 4l9 16H3z M12 10v4 M12 17v.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <p>
+                    @switch (problem)
+                    {
+                        case "notfound" when roomCode.Length > 0:
+                            <text>No room with code <strong class="display">@roomCode</strong> - check the code or create a new one.</text>
+                            break;
+                        case "notfound":
+                            <text>That room does not exist - check the code or create a new one.</text>
+                            break;
+                        case "closed":
+                            <text>That room was closed. Create a new one to keep playing.</text>
+                            break;
+                        case "full" when roomCode.Length > 0:
+                            <text>Room <strong class="display">@roomCode</strong> is full. Try again in a moment, or create your own.</text>
+                            break;
+                        case "full":
+                            <text>That room is full. Try again in a moment, or create your own.</text>
+                            break;
+                        case "busy":
+                            <text>The server has too many rooms right now. Try again in a minute.</text>
+                            break;
+                        default:
+                            <text>You opened this room in another tab, so this tab stepped aside. Join again here to take it back.</text>
+                            break;
+                    }
+                </p>
+                <button class="btn btn-icon btn-ghost btn-sm" type="button" id="home-alert-close" aria-label="Dismiss this message" title="Dismiss">
+                    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">
+                        <path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                </button>
+            </div>
+        }
+
+        <div class="play panel">
+            <div class="field play-name">
+                <label class="label" for="nickname">Your name on the pitch</label>
+                <div class="play-name-row">
+                    @* Not part of any form on purpose: the name is kept in the browser, never sent in a URL. *@
+                    <input class="input input-lg" id="nickname" type="text" maxlength="16" autocomplete="nickname" spellcheck="false" />
+                    <button class="btn btn-icon btn-lg" type="button" id="nickname-shuffle" aria-label="Suggest another name" title="Suggest another name">
+                        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+                            <path d="M4 7h3l10 10h3 M4 17h3l3-3 M14 10l3-3h3 M18 4l3 3-3 3 M18 14l3 3-3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <form class="play-create" method="post" action="~/create" asp-antiforgery="false" data-play="create">
+                <button class="btn btn-primary btn-hero" type="submit" id="create-room">
+                    <span class="btn-hero-text">
+                        <span class="btn-hero-title display" data-label>Create room</span>
+                        <span class="btn-hero-sub">Host a match and invite your colleagues</span>
+                    </span>
+                    <svg class="btn-hero-arrow" viewBox="0 0 24 24" width="26" height="26" aria-hidden="true" focusable="false">
+                        <path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                </button>
+            </form>
+
+            <div class="play-split">
+                <form class="play-join" method="get" action="~/join" data-play="join">
+                    <label class="label" for="join-code">Join with a code</label>
+                    <div class="play-join-row">
+                        <input class="input input-lg code-input display" id="join-code" name="code" type="text" value="@roomCode"
+                               maxlength="4" minlength="4" pattern="[A-Za-z]{4}" required placeholder="ABCD"
+                               autocomplete="off" autocapitalize="characters" spellcheck="false" aria-describedby="join-error" />
+                        <button class="btn btn-lg" type="submit"><span data-label>Join</span></button>
+                    </div>
+                    <p class="field-error" id="join-error" role="alert" hidden></p>
+                </form>
+
+                <form class="play-practice" method="post" action="~/practice" asp-antiforgery="false" data-play="practice">
+                    <span class="label" id="practice-label">Nobody around?</span>
+                    <button class="btn btn-lg" type="submit" aria-describedby="practice-label" title="A room of your own against the AI: no clock, no score limit">
+                        <span data-label>Practice solo</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <section class="howto" id="howto" aria-labelledby="howto-title">
+        <h2 class="howto-title display" id="howto-title">How to play</h2>
+        <ul class="howto-list">
+            <li>
+                <span class="keys"><kbd class="key">W</kbd><kbd class="key">A</kbd><kbd class="key">S</kbd><kbd class="key">D</kbd></span>
+                <span class="howto-text">Move</span>
+            </li>
+            <li>
+                <svg class="mouse" viewBox="0 0 20 28" width="18" height="26" aria-hidden="true" focusable="false">
+                    <path class="mouse-body" d="M10 1c5 0 8 3 8 8v9c0 5-3.5 9-8 9s-8-4-8-9V9c0-5 3-8 8-8zM2 12h16M10 1v11" />
+                </svg>
+                <span class="howto-text">Aim</span>
+            </li>
+            <li>
+                <svg class="mouse mouse-left" viewBox="0 0 20 28" width="18" height="26" aria-hidden="true" focusable="false">
+                    <path class="mouse-btn-l" d="M10 1C5 1 2 4 2 9v3h8z" />
+                    <path class="mouse-body" d="M10 1c5 0 8 3 8 8v9c0 5-3.5 9-8 9s-8-4-8-9V9c0-5 3-8 8-8zM2 12h16M10 1v11" />
+                </svg>
+                <span class="howto-text">Shoot <small>hold to charge</small></span>
+            </li>
+            <li>
+                <svg class="mouse mouse-right" viewBox="0 0 20 28" width="18" height="26" aria-hidden="true" focusable="false">
+                    <path class="mouse-btn-r" d="M10 1c5 0 8 3 8 8v3h-8z" />
+                    <path class="mouse-body" d="M10 1c5 0 8 3 8 8v9c0 5-3.5 9-8 9s-8-4-8-9V9c0-5 3-8 8-8zM2 12h16M10 1v11" />
+                </svg>
+                <span class="howto-text">Pass</span>
+            </li>
+            <li>
+                <span class="keys"><kbd class="key key-wide">Shift</kbd></span>
+                <span class="howto-text">Sprint</span>
+            </li>
+            <li>
+                <span class="keys"><kbd class="key key-wide">Space</kbd></span>
+                <span class="howto-text">Tackle <small>or dash with the ball</small></span>
+            </li>
+            <li>
+                <span class="keys"><kbd class="key">Q</kbd><kbd class="key">E</kbd></span>
+                <span class="howto-text">Switch player</span>
+            </li>
+        </ul>
+    </section>
+</main>
+<noscript><p class="noscript">Office Kickoff needs JavaScript to run.</p></noscript>
+
+@section Scripts {
+    <script type="module" src="~/js/home.js"></script>
+}
