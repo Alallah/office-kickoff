@@ -234,6 +234,10 @@ public sealed class MatchSettingsDto
 {
     public string Preset { get; set; } = "coffee";
     public int TeamSize { get; set; } = 5;
+
+    /// <summary>False: no goalkeepers (slot 0 plays outfield) and narrower goals.</summary>
+    public bool Keepers { get; set; } = true;
+
     public int Minutes { get; set; } = 3;
     public int ScoreLimit { get; set; }
     public bool GoldenGoal { get; set; } = true;
@@ -241,7 +245,7 @@ public sealed class MatchSettingsDto
     /// <summary>0 = easy, 1 = normal, 2 = hard.</summary>
     public int AiTeammates { get; set; } = 1;
 
-    /// <summary>0 = easy, 1 = normal, 2 = hard.</summary>
+    /// <summary>0 = easy, 1 = normal, 2 = hard. Unused while <see cref="Keepers"/> is false.</summary>
     public int AiKeeper { get; set; } = 1;
 
     public float BallSpeed { get; set; } = 1f;
@@ -308,6 +312,8 @@ public sealed class PlayerInfoDto
     public int Index { get; set; }
     public int Team { get; set; }
     public int Slot { get; set; }
+
+    /// <summary>True for the goalkeeper; always false in a match without goalkeepers (slot 0 then plays outfield).</summary>
     public bool Keeper { get; set; }
 
     /// <summary>Roster name of this footballer.</summary>

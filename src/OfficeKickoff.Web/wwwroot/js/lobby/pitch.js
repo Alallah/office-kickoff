@@ -5,7 +5,7 @@
 // shirts and the lettering stay the same size; the turf and its markings are CSS (.pitch).
 
 import { LIMITS } from '../shared/protocol.js';
-import { h, setAttr, setHidden, setText } from './dom.js';
+import { h, setAttr, setClass, setHidden, setText } from './dom.js';
 import { lineup, pitchPoint, shortName, textOn } from './team-model.js';
 
 /**
@@ -26,7 +26,7 @@ export function createMiniPitch({ flip = false } = {}) {
   for (let slot = 0; slot < LIMITS.rosterSize; slot++) {
     const number = h('span', { class: 'shirt-number tnum' });
     const name = h('span', { class: 'shirt-name' });
-    const shirt = h('div', { class: `shirt${slot === 0 ? ' shirt-keeper' : ''}`, hidden: true, 'aria-hidden': 'true' }, number, name);
+    const shirt = h('div', { class: 'shirt', hidden: true, 'aria-hidden': 'true' }, number, name);
     el.appendChild(shirt);
     shirts.push({ el: shirt, number, name, shown: false });
   }
@@ -34,18 +34,19 @@ export function createMiniPitch({ flip = false } = {}) {
   return {
     el,
     /**
-     * @param {{formation: string, teamSize: number, roster: Array<{name: string, number: number}>,
+     * @param {{formation: string, teamSize: number, keepers?: boolean, roster: Array<{name: string, number: number}>,
      *          kit: {primary: string, secondary: string, keeper: string, text: string}}} model
      *        `formation` must already be valid for the team size (TeamDto.formation or resolveFormation).
+     *        `keepers` is MatchSettingsDto.keepers: false draws slot 0 as an ordinary footballer.
      */
-    update({ formation, teamSize, roster, kit }) {
+    update({ formation, teamSize, keepers = true, roster, kit }) {
       el.style.setProperty('--shirt', kit.primary);
       el.style.setProperty('--trim', kit.secondary);
       el.style.setProperty('--ink', kit.text);
       el.style.setProperty('--keeper', kit.keeper);
       el.style.setProperty('--keeper-ink', textOn(kit.keeper));
 
-      const spots = lineup(formation, teamSize);
+      const spots = lineup(formation, teamSize, keepers);
       const said = [];
       shirts.forEach((shirt, slot) => {
         const spot = spots[slot];
@@ -56,6 +57,7 @@ export function createMiniPitch({ flip = false } = {}) {
         }
         const entry = roster?.[slot] ?? {};
         const point = pitchPoint(spot, flip);
+        setClass(shirt.el, 'shirt-keeper', spot.keeper);
         shirt.el.style.left = `${point.left.toFixed(2)}%`;
         shirt.el.style.top = `${point.top.toFixed(2)}%`;
         setText(shirt.number, entry.number ?? '');
@@ -65,7 +67,7 @@ export function createMiniPitch({ flip = false } = {}) {
           setHidden(shirt.el, false);
           shirt.shown = true;
         }
-        said.push(`${slot === 0 ? 'goalkeeper ' : ''}${entry.number ?? ''} ${entry.name ?? ''}`.trim());
+        said.push(`${spot.keeper ? 'goalkeeper ' : ''}${entry.number ?? ''} ${entry.name ?? ''}`.trim());
       });
       setAttr(el, 'aria-label', `Formation ${formation}: ${said.join(', ')}`);
     },

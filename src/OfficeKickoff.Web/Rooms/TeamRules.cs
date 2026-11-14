@@ -150,6 +150,7 @@ public static class TeamRules
         {
             Preset = dto.Preset ?? "custom",
             TeamSize = dto.TeamSize,
+            Keepers = dto.Keepers,
             Minutes = dto.Minutes,
             ScoreLimit = dto.ScoreLimit,
             GoldenGoal = dto.GoldenGoal,
@@ -168,7 +169,7 @@ public static class TeamRules
     }
 
     private static bool SameRules(MatchSettings a, MatchSettings b) =>
-        a.TeamSize == b.TeamSize && a.Minutes == b.Minutes && a.ScoreLimit == b.ScoreLimit &&
+        a.TeamSize == b.TeamSize && a.Keepers == b.Keepers && a.Minutes == b.Minutes && a.ScoreLimit == b.ScoreLimit &&
         a.GoldenGoal == b.GoldenGoal && a.AiTeammates == b.AiTeammates && a.AiKeeper == b.AiKeeper &&
         Math.Abs(a.BallSpeed - b.BallSpeed) < 0.001f && Math.Abs(a.GameSpeed - b.GameSpeed) < 0.001f;
 
@@ -176,6 +177,7 @@ public static class TeamRules
     {
         Preset = s.Preset,
         TeamSize = s.TeamSize,
+        Keepers = s.Keepers,
         Minutes = s.Minutes,
         ScoreLimit = s.ScoreLimit,
         GoldenGoal = s.GoldenGoal,

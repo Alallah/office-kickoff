@@ -85,7 +85,7 @@ public sealed partial class Match
         int size = Math.Clamp(config.Settings.TeamSize, MatchSettings.MinTeamSize, MatchSettings.MaxTeamSize);
         _teamSize = size;
         _count = 2 * size;
-        Pitch = new PitchGeometry(size, tuning);
+        Pitch = new PitchGeometry(size, tuning, config.Settings.Keepers);
         State = new MatchState
         {
             TeamSize = size,
@@ -215,8 +215,9 @@ public sealed partial class Match
         int size = _teamSize;
         string? wanted = Config.Formations is { } names && team < names.Length ? names[team] : null;
         string formation = Formations.Resolve(wanted, size);
+        bool keepers = Config.Settings.Keepers;
         var spots = Formations.Spots(formation, size);
-        var homes = Formations.HomePositions(formation, size, team, Pitch, Tuning);
+        var homes = Formations.HomePositions(formation, size, team, Pitch, Tuning, keepers);
         var keeperLevel = Config.KeeperLevel(team);
 
         for (int slot = 0; slot < size; slot++)
@@ -226,8 +227,12 @@ public sealed partial class Match
             p.Index = index;
             p.Team = team;
             p.Slot = slot;
-            p.IsKeeper = slot == 0;
-            p.Spot = slot > 0 && slot - 1 < spots.Length ? spots[slot - 1] : default;
+
+            // Without goalkeepers slot 0 is an ordinary outfield footballer: the sweeper.
+            p.IsKeeper = keepers && slot == 0;
+            p.Spot = slot == 0
+                ? keepers ? default : Formations.SweeperSpot(formation, size)
+                : slot - 1 < spots.Length ? spots[slot - 1] : default;
             p.HomePos = homes[slot];
             p.Pos = p.HomePos;
             p.Aim = FacingOf(team);
@@ -241,12 +246,15 @@ public sealed partial class Match
             }
         }
 
-        // Kickoff priority: most advanced first, then most central, then lowest slot.
-        var order = new int[size - 1];
-        for (int slot = 1; slot < size; slot++)
+        // Kickoff priority over the outfield footballers: most advanced first, then most central,
+        // then lowest slot. A sweeper (slot 0 without goalkeepers) always comes last.
+        var order = new List<int>(size);
+        for (int slot = 0; slot < size; slot++)
         {
             int index = team * size + slot;
-            int at = slot - 1;
+            if (players[index].IsKeeper) continue;
+            int at = order.Count;
+            order.Add(index);
             while (at > 0 && KicksOffBefore(index, order[at - 1]))
             {
                 order[at] = order[at - 1];
@@ -256,13 +264,14 @@ public sealed partial class Match
             order[at] = index;
         }
 
-        _priority[team] = order;
+        _priority[team] = order.ToArray();
     }
 
     private bool KicksOffBefore(int a, int b)
     {
         ref readonly var pa = ref State.Players[a];
         ref readonly var pb = ref State.Players[b];
+        if ((pa.Slot == 0) != (pb.Slot == 0)) return pb.Slot == 0;
         if (pa.Spot.Depth != pb.Spot.Depth) return pa.Spot.Depth > pb.Spot.Depth;
         float la = MathF.Abs(pa.Spot.Lateral), lb = MathF.Abs(pb.Spot.Lateral);
         if (la != lb) return la < lb;

@@ -106,9 +106,9 @@ public sealed partial class Match
     private bool HasFreeFootballer(int team)
     {
         var players = State.Players;
-        for (int i = team * _teamSize + 1; i < (team + 1) * _teamSize; i++)
+        for (int i = team * _teamSize; i < (team + 1) * _teamSize; i++)
         {
-            if (players[i].Controller == -1) return true;
+            if (!players[i].IsKeeper && players[i].Controller == -1) return true;
         }
 
         return false;
@@ -127,9 +127,9 @@ public sealed partial class Match
         Vec2 ball = State.Ball.Pos;
         int best = -1;
         float bestD2 = float.MaxValue;
-        for (int i = h.Team * _teamSize + 1; i < (h.Team + 1) * _teamSize; i++)
+        for (int i = h.Team * _teamSize; i < (h.Team + 1) * _teamSize; i++)
         {
-            if (players[i].Controller != -1) continue;
+            if (players[i].IsKeeper || players[i].Controller != -1) continue;
             float d2 = Vec2.DistanceSq(players[i].Pos, ball);
             if (d2 < bestD2)
             {
@@ -280,9 +280,9 @@ public sealed partial class Match
         ref readonly var b = ref State.Ball;
         int best = -1;
         float bestD2 = float.MaxValue;
-        for (int i = h.Team * _teamSize + 1; i < (h.Team + 1) * _teamSize; i++)
+        for (int i = h.Team * _teamSize; i < (h.Team + 1) * _teamSize; i++)
         {
-            if (players[i].Controller != -1) continue;
+            if (players[i].IsKeeper || players[i].Controller != -1) continue;
             if (b.Owner == i) return i;
             float d2 = Vec2.DistanceSq(players[i].Pos, b.Pos);
             if (d2 < bestD2)
@@ -299,13 +299,12 @@ public sealed partial class Match
     {
         var players = State.Players;
         int first = h.Team * _teamSize;
-        int outfield = _teamSize - 1;
         int slot = players[h.PlayerIndex].Slot;
-        for (int step = 1; step < outfield; step++)
+        for (int step = 1; step < _teamSize; step++)
         {
-            // Slots 1..outfield, wrapping around past the last one.
-            int next = (slot - 1 + step) % outfield + 1;
-            if (players[first + next].Controller == -1) return first + next;
+            // The following slots, wrapping around past the last one; a goalkeeper is skipped.
+            int next = first + (slot + step) % _teamSize;
+            if (!players[next].IsKeeper && players[next].Controller == -1) return next;
         }
 
         return -1;
@@ -367,10 +366,10 @@ public sealed partial class Match
 
         int candidate = -1;
         float candidateD2 = float.MaxValue;
-        for (int i = team * _teamSize + 1; i < (team + 1) * _teamSize; i++)
+        for (int i = team * _teamSize; i < (team + 1) * _teamSize; i++)
         {
             ref readonly var p = ref players[i];
-            if (p.Controller != -1 || p.Action != PlayerAction.None) continue;
+            if (p.IsKeeper || p.Controller != -1 || p.Action != PlayerAction.None) continue;
             float d2 = Vec2.DistanceSq(p.Pos, b.Pos);
             if (d2 < candidateD2)
             {

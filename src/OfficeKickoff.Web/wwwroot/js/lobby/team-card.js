@@ -238,6 +238,7 @@ export function createTeamCard({ team, catalog, actions }) {
       if (!config) return;
       const kit = kitOf(dto);
       const teamSize = ctx.room.settings?.teamSize ?? 5;
+      const keepers = ctx.room.settings?.keepers !== false;
       const formation = resolveFormation(dto.formation, teamSize, catalog.formations);
 
       const crestKey = `${config.crest}|${config.primary}|${config.secondary}`;
@@ -256,9 +257,11 @@ export function createTeamCard({ team, catalog, actions }) {
       kitShirt.set(kit.primary);
       kitTrim.set(kit.secondary);
       kitKeeper.set(kit.keeper);
+      // Without goalkeepers nobody wears the keeper shirt.
+      setHidden(kitKeeper.el, !keepers);
       setHidden(kitNote, !kit.swapped);
       setText(formationValue, formation);
-      pitch.update({ formation, teamSize, roster: config.roster, kit });
+      pitch.update({ formation, teamSize, keepers, roster: config.roster, kit });
 
       const list = ctx.view.seats[team] ?? [];
       const count = Math.max(SEATS_PER_TEAM, list.length);

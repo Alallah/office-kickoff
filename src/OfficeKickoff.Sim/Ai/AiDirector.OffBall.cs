@@ -69,6 +69,9 @@ public sealed partial class AiDirector
             case Role.Support:
                 Support(i, ref input);
                 break;
+            case Role.Sweep:
+                Sweep(i, ref input);
+                break;
             default:
                 Zone(i, ref input);
                 break;
@@ -356,6 +359,40 @@ public sealed partial class AiDirector
         input.Move = Steer(i, OnPitch(spot), true);
         input.Sprint = _sprintPlan[i] && Vec2.Distance(p.Pos, spot) > 220f;
         input.AimPoint = b.Pos;
+    }
+
+    /// <summary>
+    /// The sweeper of a team without a goalkeeper: on the line from its own goal to the ball, deeper
+    /// the further away the ball is, never wider than a little outside the posts. It goes for the
+    /// ball itself only when it comes close (AssignRoles then makes it the chaser or presser), but
+    /// slides in on a carrier that runs into it.
+    /// </summary>
+    private void Sweep(int i, ref PlayerInput input)
+    {
+        var players = _s.Players;
+        ref readonly var p = ref players[i];
+        ref readonly var b = ref _s.Ball;
+        Vec2 goal = _pitch.OwnGoal(p.Team);
+        Vec2 to = b.Pos - goal;
+        float dist = to.Length;
+        Vec2 dir = dist > 1f ? to / dist : new Vec2(PitchGeometry.AttackSign(p.Team), 0f);
+        float depth = Math.Clamp(dist * 0.45f, 90f, MathF.Max(90f, SweepDepth));
+        depth = MathF.Min(depth, MathF.Max(25f, dist - 45f));
+        Vec2 spot = goal + dir * depth;
+        float lane = _pitch.GoalHalf + 60f;
+        spot = new Vec2(spot.X, Math.Clamp(spot.Y, -lane, lane));
+
+        int owner = b.Owner;
+        bool theirs = owner >= 0 && players[owner].Team != p.Team;
+        if (b.Held && theirs) spot = OutOfBox(spot, players[owner].Team);
+
+        // Caught upfield with the ball nearer our goal than we are: get back at full speed.
+        float away = Vec2.Distance(p.Pos, spot);
+        bool beaten = Vec2.Distance(p.Pos, goal) > dist;
+        input.Move = Steer(i, OnPitch(spot), true, 30f);
+        input.Sprint = (beaten || _sprintPlan[i]) && away > 80f && !p.Exhausted;
+        input.AimPoint = b.Pos;
+        if (theirs) TrySlide(i, owner, ref input);
     }
 
     // ------------------------------------------------------------------------------------

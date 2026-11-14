@@ -67,7 +67,9 @@ public enum TouchKind : byte
 /// <summary>
 /// One footballer. Team 0 occupies indices [0, TeamSize) of <see cref="MatchState.Players"/> and
 /// team 1 occupies [TeamSize, 2*TeamSize). Within a team, slot 0 is the goalkeeper and slots
-/// 1.. are outfield footballers in formation order (defence to attack).
+/// 1.. are outfield footballers in formation order (defence to attack). In a match without
+/// goalkeepers (MatchSettings.Keepers off) nobody is a keeper: slot 0 is an outfield sweeper.
+/// Always test <see cref="IsKeeper"/>, never the slot.
 /// </summary>
 public struct PlayerState
 {
@@ -77,7 +79,7 @@ public struct PlayerState
     public int Slot;
     public bool IsKeeper;
 
-    /// <summary>Formation spot of an outfield footballer (default for the keeper).</summary>
+    /// <summary>Formation spot of an outfield footballer, the sweeper included (default for the keeper).</summary>
     public FormationSpot Spot;
 
     /// <summary>Formation position in the team's own half; also the kickoff position.</summary>

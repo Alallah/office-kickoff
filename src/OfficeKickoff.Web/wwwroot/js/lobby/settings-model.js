@@ -8,6 +8,7 @@ import { LIMITS } from '../shared/protocol.js';
 export const SETTINGS_DEFAULTS = Object.freeze({
   preset: 'coffee',
   teamSize: 5,
+  keepers: true,
   minutes: 3,
   scoreLimit: 0,
   goldenGoal: true,
@@ -21,7 +22,7 @@ export const SETTINGS_DEFAULTS = Object.freeze({
 
 /** Every rule field, i.e. everything except the preset id. */
 export const RULE_FIELDS = Object.freeze([
-  'teamSize', 'minutes', 'scoreLimit', 'goldenGoal', 'aiTeammates', 'aiKeeper',
+  'teamSize', 'keepers', 'minutes', 'scoreLimit', 'goldenGoal', 'aiTeammates', 'aiKeeper',
   'ballSpeed', 'gameSpeed', 'replays', 'celebrations',
 ]);
 
@@ -50,6 +51,7 @@ export function normalizeSettings(raw) {
   return {
     preset: typeof s.preset === 'string' && s.preset !== '' ? s.preset : 'custom',
     teamSize: intIn(s.teamSize, LIMITS.minTeamSize, LIMITS.maxTeamSize, d.teamSize),
+    keepers: typeof s.keepers === 'boolean' ? s.keepers : d.keepers,
     minutes: intIn(s.minutes, LIMITS.minMinutes, LIMITS.maxMinutes, d.minutes),
     scoreLimit: intIn(s.scoreLimit, 0, LIMITS.maxScoreLimit, d.scoreLimit),
     goldenGoal: typeof s.goldenGoal === 'boolean' ? s.goldenGoal : d.goldenGoal,
@@ -112,6 +114,7 @@ export function formatScoreLimit(value) {
 /** "5-a-side, 3 min" - the one-line version of the rules. */
 export function summarizeSettings(settings) {
   const parts = [`${settings.teamSize}-a-side`, formatMinutes(settings.minutes)];
+  if (settings.keepers === false) parts.push('no keepers');
   if (settings.scoreLimit > 0) parts.push(formatScoreLimit(settings.scoreLimit).toLowerCase());
   return parts.join(', ');
 }

@@ -289,6 +289,7 @@ export function matchCaption(init) {
   if (init?.practice) parts.push('Practice');
   const size = count(s.teamSize);
   if (size > 0) parts.push(`${size}-a-side`);
+  if (s.keepers === false) parts.push('no keepers');
   if (init?.practice) {
     parts.push('no clock');
     return parts.join(' · ');

@@ -257,8 +257,8 @@ public sealed partial class Match
 
     /// <summary>
     /// Pass target rule. Team-mates whose direction from the passer is within the pass cone of the
-    /// aim direction are candidates - outfield team-mates first, the own goalkeeper only when no
-    /// outfield team-mate is in the cone. Candidates within PassTieDeg of the best-aligned one are
+    /// aim direction are candidates - outfield team-mates first, the own goalkeeper (in a match with
+    /// goalkeepers) only when no outfield team-mate is in the cone. Candidates within PassTieDeg of the best-aligned one are
     /// tied; the nearest tied candidate gets the pass.
     /// </summary>
     private int FindPassTarget(int i, Vec2 aimDir)
@@ -271,25 +271,32 @@ public sealed partial class Match
         int first = p.Team * _teamSize;
         int end = first + _teamSize;
 
+        int keeper = -1;
         float smallest = float.MaxValue;
-        for (int j = first + 1; j < end; j++)
+        for (int j = first; j < end; j++)
         {
             if (j == i) continue;
+            if (players[j].IsKeeper)
+            {
+                keeper = j;
+                continue;
+            }
+
             float angle = PassAngle(in p, in players[j], aimAngle);
             if (angle <= cone && angle < smallest) smallest = angle;
         }
 
         if (smallest == float.MaxValue)
         {
-            // Nobody outfield: the keeper is the last resort.
-            return first != i && PassAngle(in p, in players[first], aimAngle) <= cone ? first : -1;
+            // Nobody outfield: the keeper (if the team has one) is the last resort.
+            return keeper >= 0 && PassAngle(in p, in players[keeper], aimAngle) <= cone ? keeper : -1;
         }
 
         int best = -1;
         float bestD2 = float.MaxValue;
-        for (int j = first + 1; j < end; j++)
+        for (int j = first; j < end; j++)
         {
-            if (j == i) continue;
+            if (j == i || players[j].IsKeeper) continue;
             float angle = PassAngle(in p, in players[j], aimAngle);
             if (angle > cone || angle > smallest + tie) continue;
             float d2 = Vec2.DistanceSq(p.Pos, players[j].Pos);
@@ -340,9 +347,9 @@ public sealed partial class Match
         int first = k.Team * _teamSize;
         int target = -1;
         float bestD2 = float.MaxValue;
-        for (int j = first + 1; j < first + _teamSize; j++)
+        for (int j = first; j < first + _teamSize; j++)
         {
-            if (j == keeper) continue;
+            if (j == keeper || players[j].IsKeeper) continue;
             float d2 = Vec2.DistanceSq(k.Pos, players[j].Pos);
             if (d2 < bestD2)
             {

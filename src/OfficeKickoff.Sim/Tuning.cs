@@ -100,6 +100,9 @@ public sealed class PitchTuning
     /// <summary>Goal mouth opening per team size.</summary>
     public PerSize GoalWidth { get; set; } = new(180, 195, 210, 225, 240);
 
+    /// <summary>Goal mouth width multiplier for matches played without goalkeepers (0..1].</summary>
+    public float NoKeeperGoalScale { get; set; } = 0.6f;
+
     /// <summary>How far the net extends behind the goal line.</summary>
     public float GoalDepth { get; set; } = 64;
 

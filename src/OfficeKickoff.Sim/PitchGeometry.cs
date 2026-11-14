@@ -29,14 +29,15 @@ public sealed class PitchGeometry
     /// <summary>Centres of the four goal posts: left-top, left-bottom, right-top, right-bottom.</summary>
     public Vec2[] Posts { get; }
 
-    public PitchGeometry(int teamSize, Tuning tuning)
+    /// <param name="keepers">False for a match without goalkeepers: the goal mouths are narrowed by PitchTuning.NoKeeperGoalScale.</param>
+    public PitchGeometry(int teamSize, Tuning tuning, bool keepers = true)
     {
         var p = tuning.Pitch;
         Width = p.Width.Get(teamSize);
         Height = p.Height.Get(teamSize);
         HalfW = Width / 2f;
         HalfH = Height / 2f;
-        GoalWidth = p.GoalWidth.Get(teamSize);
+        GoalWidth = p.GoalWidth.Get(teamSize) * (keepers ? 1f : GoalScale(p.NoKeeperGoalScale));
         GoalHalf = GoalWidth / 2f;
         GoalDepth = p.GoalDepth;
         PostRadius = p.PostRadius;
@@ -50,6 +51,9 @@ public sealed class PitchGeometry
             new Vec2(HalfW, -GoalHalf), new Vec2(HalfW, GoalHalf),
         ];
     }
+
+    /// <summary>Tuning overrides are not validated: a scale that makes no sense leaves the goal as it is.</summary>
+    private static float GoalScale(float scale) => float.IsFinite(scale) && scale is > 0f and <= 1f ? scale : 1f;
 
     /// <summary>+1 for the team attacking towards +X (team 0), -1 for team 1.</summary>
     public static float AttackSign(int team) => team == 0 ? 1f : -1f;

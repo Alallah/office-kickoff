@@ -7,6 +7,9 @@ public sealed partial class AiDirector
     /// <summary>Where across the goal mouth (fraction of the post-to-centre distance) the AI may aim.</summary>
     private static readonly float[] ShotLanes = [-0.9f, -0.65f, -0.3f, 0.3f, 0.65f, 0.9f];
 
+    /// <summary>Keeper margin of a shot at a goal nobody keeps: comfortably clear, whatever the lane.</summary>
+    private const float OpenGoalMargin = 150f;
+
     private void ThinkCarrier(int i, bool plan, ref PlayerInput input)
     {
         ref readonly var p = ref _s.Players[i];
@@ -53,7 +56,7 @@ public sealed partial class AiDirector
     private bool HasHumanTeammate(int i)
     {
         int team = _s.Players[i].Team;
-        for (int j = team * _size + 1; j < (team + 1) * _size; j++)
+        for (int j = team * _size; j < (team + 1) * _size; j++)
         {
             if (j != i && IsHuman(j)) return true;
         }
@@ -159,11 +162,14 @@ public sealed partial class AiDirector
     /// The best spot in the goal mouth to aim at from <paramref name="from"/>: a lane no outfield
     /// opponent can block, as far out of the keeper's reach as possible. False when every lane is blocked.
     /// <paramref name="margin"/> is by how much the keeper is expected to miss it (negative: within reach).
+    /// Against a team without a goalkeeper the margin is large and the lanes nearest the middle of
+    /// the (narrower) goal are preferred, which leaves the most room for aim error.
     /// </summary>
     private bool BestShot(int i, Vec2 from, float charge, out Vec2 target, out float margin)
     {
         ref readonly var p = ref _s.Players[i];
         int opp = 1 - p.Team;
+        int goalkeeper = KeeperOf(opp);
         float lineX = _pitch.GoalLineX(opp);
         float speed = ShotSpeed(charge);
         float inset = _pitch.GoalHalf - _pitch.PostRadius - _t.Ball.Radius;
@@ -176,7 +182,9 @@ public sealed partial class AiDirector
             Vec2 t = new(lineX, ShotLanes[k] * inset);
             float lane = OutfieldLane(from, t, opp, speed);
             if (lane < -4f) continue;
-            float keeper = KeeperMargin(opp, from, t, speed);
+            float keeper = goalkeeper >= 0
+                ? KeeperMargin(goalkeeper, from, t, speed)
+                : OpenGoalMargin - MathF.Abs(ShotLanes[k]) * 40f;
             float score = keeper + MathF.Min(lane, 40f) * 0.25f;
             if (!found || score > margin)
             {
@@ -199,9 +207,10 @@ public sealed partial class AiDirector
         Vec2 u = d / len;
         float body = _t.Player.Radius + _t.Ball.Radius;
         float best = 999f;
-        for (int j = team * _size + 1; j < (team + 1) * _size; j++)
+        for (int j = team * _size; j < (team + 1) * _size; j++)
         {
             ref readonly var q = ref players[j];
+            if (q.IsKeeper) continue;
             Vec2 rel = q.Pos - from;
             float along = Vec2.Dot(rel, u);
             if (along < 0f || along > len) continue;
@@ -214,10 +223,11 @@ public sealed partial class AiDirector
         return best;
     }
 
-    /// <summary>By how far the defending keeper would miss a ball struck from one point to another.</summary>
-    private float KeeperMargin(int defending, Vec2 from, Vec2 to, float speed)
+    /// <summary>By how far a goalkeeper (index <paramref name="keeper"/>) would miss a ball struck from one point to another.</summary>
+    private float KeeperMargin(int keeper, Vec2 from, Vec2 to, float speed)
     {
-        ref readonly var k = ref _s.Players[defending * _size];
+        ref readonly var k = ref _s.Players[keeper];
+        int defending = k.Team;
         Vec2 d = to - from;
         float len = d.Length;
         if (len < 1f) return 0f;
@@ -309,11 +319,11 @@ public sealed partial class AiDirector
         int best = -1;
         bestScore = float.MinValue;
 
-        for (int j = team * _size + 1; j < (team + 1) * _size; j++)
+        for (int j = team * _size; j < (team + 1) * _size; j++)
         {
             if (j == i) continue;
             ref readonly var q = ref players[j];
-            if (humansOnly && q.Controller < 0) continue;
+            if (q.IsKeeper || (humansOnly && q.Controller < 0)) continue;
             if (q.Action is PlayerAction.Stunned or PlayerAction.Slide or PlayerAction.Recover) continue;
 
             Vec2 spot = _pitch.ClampCircle(q.Pos + q.Vel * 0.3f, _t.Player.Radius);

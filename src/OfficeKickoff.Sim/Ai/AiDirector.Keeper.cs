@@ -110,12 +110,16 @@ public sealed partial class AiDirector
         }
     }
 
-    /// <summary>Whether the keeper should come for the loose ball (decided before the outfield roles).</summary>
+    /// <summary>
+    /// Whether the keeper should come for the loose ball (decided before the outfield roles).
+    /// Never in a match without goalkeepers: the outfield chaser goes instead.
+    /// </summary>
     private bool KeeperClaims(int team)
     {
         UpdateThreat(team);
         ref readonly var b = ref _s.Ball;
-        int k = team * _size;
+        int k = KeeperOf(team);
+        if (k < 0) return false;
         ref readonly var p = ref _s.Players[k];
         if (b.Owner >= 0 || b.Dead || p.Controller != -1) return false;
         if (p.Action is not (PlayerAction.None or PlayerAction.Dash)) return false;
@@ -208,8 +212,9 @@ public sealed partial class AiDirector
         if (dC > _t.Ai.ShootRange.Get(OutfieldLevel(c.Team)) + 40f) return false;
 
         Vec2 u = (goal - c.Pos) / MathF.Max(1f, dC);
-        for (int j = team * _size + 1; j < (team + 1) * _size; j++)
+        for (int j = team * _size; j < (team + 1) * _size; j++)
         {
+            if (j == k) continue;
             Vec2 rel = players[j].Pos - c.Pos;
             float along = Vec2.Dot(rel, u);
             if (along > 0f && along < dC && MathF.Abs(Vec2.Cross(u, rel)) < 60f) return false;

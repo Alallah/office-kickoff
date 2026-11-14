@@ -77,6 +77,8 @@ export function createTeamEditor({ catalog, background, actions }) {
   let ctx = null;
   let team = 0;
   let teamSize = 5;
+  /** MatchSettingsDto.keepers: false makes slot 0 an ordinary footballer. */
+  let keepers = true;
   /** The server's team the form was last loaded from: the yardstick for "edited". */
   let baseline = null;
   /** The server's team right now (it can move while the editor is open). */
@@ -92,6 +94,7 @@ export function createTeamEditor({ catalog, background, actions }) {
   const baseIds = [null, null];
 
   const sizeOf = (c) => c?.room?.settings?.teamSize ?? 5;
+  const keepersOf = (c) => c?.room?.settings?.keepers !== false;
   const canEdit = () => ctx?.view?.canEdit?.[team] === true;
   const dirty = () => Boolean(draft && baseline) && !teamsEqual(draft, baseline);
 
@@ -128,7 +131,7 @@ export function createTeamEditor({ catalog, background, actions }) {
   }
 
   function rosterRow(slot) {
-    const who = slot === 0 ? 'goalkeeper' : `player ${slot + 1}`;
+    const who = `player ${slot + 1}`;
     const number = h('input', {
       class: 'input roster-number tnum',
       type: 'text',
@@ -151,13 +154,22 @@ export function createTeamEditor({ catalog, background, actions }) {
       typed();
     });
     name.addEventListener('input', typed);
-    const pos = h('span', {
-      class: 'roster-pos display',
-      text: slot === 0 ? 'GK' : String(slot + 1),
-      title: slot === 0 ? 'Goalkeeper (always played by the AI)' : `Outfield slot ${slot}`,
-    });
-    const el = h('li', { class: `roster-row${slot === 0 ? ' is-keeper' : ''}` }, pos, number, name);
-    return { el, number, name };
+    const pos = h('span', { class: 'roster-pos display' });
+    const el = h('li', { class: 'roster-row' }, pos, number, name);
+    const row = { el, number, name, pos };
+    paintRosterRow(row, slot);
+    return row;
+  }
+
+  /** Slot 0 is the goalkeeper, or with goalkeepers off an ordinary footballer like the rest. */
+  function paintRosterRow(row, slot) {
+    const keeper = slot === 0 && keepers;
+    const who = keeper ? 'goalkeeper' : `player ${slot + 1}`;
+    setText(row.pos, keeper ? 'GK' : String(slot + 1));
+    setAttr(row.pos, 'title', keeper ? 'Goalkeeper (always played by the AI)' : slot === 0 ? 'Sweeper: plays outfield while there are no goalkeepers' : `Outfield slot ${slot}`);
+    setClass(row.el, 'is-keeper', keeper);
+    setAttr(row.number, 'aria-label', `Shirt number of the ${who}`);
+    setAttr(row.name, 'aria-label', `Name of the ${who}`);
   }
 
   function build() {
@@ -496,6 +508,10 @@ export function createTeamEditor({ catalog, background, actions }) {
     setHidden(ui.bench, teamSize >= LIMITS.rosterSize);
   }
 
+  function paintKeepers() {
+    ui.rows.forEach((row, slot) => paintRosterRow(row, slot));
+  }
+
   function paintButtons() {
     const allowed = canEdit();
     const changed = Boolean(server) && !teamsEqual(draft, server);
@@ -561,7 +577,7 @@ export function createTeamEditor({ catalog, background, actions }) {
 
     const formation = resolveFormation(draft.formation, teamSize, catalog.formations);
     ui.formation.set(formation);
-    ui.pitches[team]?.update({ formation, teamSize, roster: draft.roster, kit });
+    ui.pitches[team]?.update({ formation, teamSize, keepers, roster: draft.roster, kit });
 
     // An emptied code box shows what will be used instead.
     setAttr(ui.code, 'placeholder', codeFromName(draft.name));
@@ -854,11 +870,13 @@ export function createTeamEditor({ catalog, background, actions }) {
     build();
     team = side === 1 ? 1 : 0;
     teamSize = sizeOf(ctx);
+    keepers = keepersOf(ctx);
     busy = false;
     shown.crest = '';
     shown.colors = '';
     paintSide();
     paintTeamSize();
+    paintKeepers();
     loadTeam(config);
     if (edits) setForm(edits);
     hidePaste(false);
@@ -884,6 +902,10 @@ export function createTeamEditor({ catalog, background, actions }) {
       if (size !== teamSize) {
         teamSize = size;
         paintTeamSize();
+      }
+      if (keepersOf(next) !== keepers) {
+        keepers = keepersOf(next);
+        paintKeepers();
       }
       if ((next.myTeams ?? []) !== shownSaved) paintSaved(next.myTeams ?? []);
       paintSide();

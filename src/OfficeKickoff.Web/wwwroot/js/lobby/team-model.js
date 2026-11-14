@@ -413,6 +413,9 @@ export function formationSpots(name) {
 /** Where the keeper stands on the schematic half pitch (the real line offset would hide in the goal). */
 const KEEPER_U = 0.065;
 
+/** Depth of the sweeper who takes slot 0 without goalkeepers (Formations.SweeperDepth). */
+const SWEEPER_DEPTH = 0.13;
+
 /** Percent of the mini pitch kept clear at each end, so shirts and name tags stay inside it. */
 const PITCH_PAD_X = 7;
 const PITCH_SPAN_X = 100 - 2 * PITCH_PAD_X;
@@ -434,14 +437,18 @@ export function pitchPoint(entry, flip) {
 }
 
 /**
- * Kickoff positions on a half pitch, per slot (0 = keeper), following Formations.HomePositions:
+ * Kickoff positions on a half pitch, per slot, following Formations.HomePositions: slot 0 is the
+ * keeper, or with `keepers` false an ordinary footballer playing as a deep central sweeper.
  * u runs from the team's own goal line (0) to the halfway line (1), v from -1 to +1 across.
  * These are for the home side; the away side is the same layout rotated 180 degrees.
+ * @param {string} formation
+ * @param {number} teamSize
+ * @param {boolean} [keepers]  MatchSettingsDto.keepers
  * @returns {Array<{slot:number, keeper:boolean, u:number, v:number}>}
  */
-export function lineup(formation, teamSize) {
+export function lineup(formation, teamSize, keepers = true) {
   const spots = formationSpots(formation);
-  const out = [{ slot: 0, keeper: true, u: KEEPER_U, v: 0 }];
+  const out = [keepers ? { slot: 0, keeper: true, u: KEEPER_U, v: 0 } : { slot: 0, keeper: false, u: SWEEPER_DEPTH * 0.94, v: 0 }];
   for (let i = 0; i < spots.length && i + 1 < teamSize; i++) {
     out.push({ slot: i + 1, keeper: false, u: spots[i].depth * 0.94, v: spots[i].lateral });
   }

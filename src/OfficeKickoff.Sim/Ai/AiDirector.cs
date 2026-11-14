@@ -44,6 +44,12 @@ public sealed partial class AiDirector : IAiDirector
 
         /// <summary>Goal side of one opponent (the role argument).</summary>
         Mark,
+
+        /// <summary>
+        /// A match without goalkeepers: slot 0 holds the space between the ball and its own goal
+        /// instead of marking, and only steps out for a ball or a carrier that comes close.
+        /// </summary>
+        Sweep,
     }
 
     // ---- the current Think call -------------------------------------------------------------
@@ -463,6 +469,48 @@ public sealed partial class AiDirector : IAiDirector
 
     private bool IsHuman(int i) => _s.Players[i].Controller >= 0;
 
+    /// <summary>A team's goalkeeper, or -1 in a match played without goalkeepers.</summary>
+    private int KeeperOf(int team)
+    {
+        var players = _s.Players;
+        for (int j = team * _size; j < (team + 1) * _size; j++)
+        {
+            if (players[j].IsKeeper) return j;
+        }
+
+        return -1;
+    }
+
+    /// <summary>
+    /// A team's AI sweeper: slot 0 in a match without goalkeepers, while the AI controls it. -1 when
+    /// the team has a goalkeeper or a human is playing slot 0.
+    /// </summary>
+    private int SweeperOf(int team)
+    {
+        if (KeeperOf(team) >= 0) return -1;
+        int i = team * _size;
+        return i < _n && IsAiOutfield(i) ? i : -1;
+    }
+
+    /// <summary>Furthest the sweeper's post ever gets from its own goal.</summary>
+    private float SweepDepth => _pitch.HalfW * 0.32f;
+
+    /// <summary>A loose ball coming to rest this close to the goal is the sweeper's to go for.</summary>
+    private float SweepReach => _pitch.HalfW * 0.5f;
+
+    /// <summary>
+    /// A carrier this close to the goal may be pressed by the sweeper. Further out it holds its post:
+    /// a sweeper that marks upfield leaves an empty goal behind it.
+    /// </summary>
+    private float SweepPress => _pitch.HalfW * 0.4f;
+
+    private void TakeSweep(int sweeper)
+    {
+        _wantRole[sweeper] = Role.Sweep;
+        _wantArg[sweeper] = -1;
+        _taken[sweeper] = true;
+    }
+
     /// <summary>Works out, for one team, the role every AI outfield footballer should take at its next re-plan.</summary>
     private void AssignRoles(int team)
     {
@@ -478,6 +526,8 @@ public sealed partial class AiDirector : IAiDirector
         }
 
         _keeperClaims[team] = KeeperClaims(team);
+        int sweeper = SweeperOf(team);
+        Vec2 ownGoal = _pitch.OwnGoal(team);
         int owner = b.Owner;
         if (owner >= 0)
         {
@@ -485,6 +535,9 @@ public sealed partial class AiDirector : IAiDirector
             if (players[owner].Team == team)
             {
                 _presser[team] = -1;
+
+                // The sweeper stays behind the attack: someone has to be there when the ball is lost.
+                if (sweeper >= 0 && sweeper != owner) TakeSweep(sweeper);
                 for (int i = first; i < end; i++)
                 {
                     if (!_taken[i] && i != owner) _wantRole[i] = Role.Support;
@@ -492,7 +545,7 @@ public sealed partial class AiDirector : IAiDirector
             }
             else
             {
-                Defend(team, owner);
+                Defend(team, owner, sweeper);
             }
 
             return;
@@ -511,6 +564,7 @@ public sealed partial class AiDirector : IAiDirector
                 _taken[target] = true;
             }
 
+            if (sweeper >= 0 && !_taken[sweeper]) TakeSweep(sweeper);
             for (int i = first; i < end; i++)
             {
                 if (!_taken[i]) _wantRole[i] = Role.Support;
@@ -520,6 +574,8 @@ public sealed partial class AiDirector : IAiDirector
         }
 
         // Loose ball: the AI footballer who gets there first goes, unless one of our humans clearly will.
+        // A sweeper only leaves its post for a ball that is coming into its own area.
+        bool sweeperGoes = sweeper >= 0 && Vec2.Distance(_etaPoint[sweeper], ownGoal) < SweepReach;
         float bestAi = float.MaxValue, bestHuman = float.MaxValue, bestOpp = float.MaxValue;
         int chaser = -1;
         for (int i = 0; i < _n; i++)
@@ -536,7 +592,7 @@ public sealed partial class AiDirector : IAiDirector
             {
                 bestHuman = MathF.Min(bestHuman, _eta[i]);
             }
-            else if (_eta[i] < bestAi)
+            else if (_eta[i] < bestAi && (i != sweeper || sweeperGoes))
             {
                 bestAi = _eta[i];
                 chaser = i;
@@ -545,7 +601,7 @@ public sealed partial class AiDirector : IAiDirector
 
         int previous = _chaser[team];
         if (chaser >= 0 && previous >= 0 && previous != chaser && IsAiOutfield(previous) &&
-            players[previous].Team == team && _eta[previous] <= bestAi + 0.2f)
+            players[previous].Team == team && _eta[previous] <= bestAi + 0.2f && (previous != sweeper || sweeperGoes))
         {
             chaser = previous;
             bestAi = _eta[previous];
@@ -560,6 +616,7 @@ public sealed partial class AiDirector : IAiDirector
             _taken[chaser] = true;
         }
 
+        if (sweeper >= 0 && !_taken[sweeper]) TakeSweep(sweeper);
         bool ours = MathF.Min(bestAi, bestHuman) < bestOpp - 0.05f || _keeperClaims[team];
         if (ours)
         {
@@ -574,8 +631,12 @@ public sealed partial class AiDirector : IAiDirector
         }
     }
 
-    /// <summary>The opponents have the ball: one presser (or a cover behind our human), the rest mark.</summary>
-    private void Defend(int team, int carrier)
+    /// <summary>
+    /// The opponents have the ball: one presser (or a cover behind our human), the rest mark. A
+    /// sweeper (<paramref name="sweeper"/>, -1 for none) only presses a carrier close to its goal and
+    /// otherwise holds its post.
+    /// </summary>
+    private void Defend(int team, int carrier, int sweeper)
     {
         var players = _s.Players;
         ref readonly var b = ref _s.Ball;
@@ -584,6 +645,7 @@ public sealed partial class AiDirector : IAiDirector
 
         // The keeper's hands close the box: nobody runs at them.
         bool pressable = !b.Held;
+        bool sweeperPresses = sweeper >= 0 && Vec2.Distance(c.Pos, _pitch.OwnGoal(team)) < SweepPress;
 
         int best = -1;
         float bestEta = float.MaxValue;
@@ -598,6 +660,7 @@ public sealed partial class AiDirector : IAiDirector
                 continue;
             }
 
+            if (i == sweeper && !sweeperPresses) continue;
             if (_eta[i] < bestEta)
             {
                 bestEta = _eta[i];
@@ -607,7 +670,7 @@ public sealed partial class AiDirector : IAiDirector
 
         int previous = _presser[team];
         if (best >= 0 && previous >= 0 && previous != best && IsAiOutfield(previous) &&
-            players[previous].Team == team && _eta[previous] <= bestEta + 0.25f)
+            players[previous].Team == team && _eta[previous] <= bestEta + 0.25f && (previous != sweeper || sweeperPresses))
         {
             best = previous;
         }
@@ -628,6 +691,7 @@ public sealed partial class AiDirector : IAiDirector
             _taken[best] = true;
         }
 
+        if (sweeper >= 0 && !_taken[sweeper]) TakeSweep(sweeper);
         AssignMarkers(team, carrier);
     }
 
@@ -641,9 +705,9 @@ public sealed partial class AiDirector : IAiDirector
         int opp = 1 - team;
         Vec2 goal = _pitch.OwnGoal(team);
         int count = 0;
-        for (int j = opp * _size + 1; j < (opp + 1) * _size; j++)
+        for (int j = opp * _size; j < (opp + 1) * _size; j++)
         {
-            if (j == carrier) continue;
+            if (j == carrier || players[j].IsKeeper) continue;
             float d = Vec2.DistanceSq(players[j].Pos, goal);
             int at = count++;
             while (at > 0 && Vec2.DistanceSq(players[_order[at - 1]].Pos, goal) > d)
@@ -662,7 +726,7 @@ public sealed partial class AiDirector : IAiDirector
             int j = _order[k];
             ref readonly var o = ref players[j];
             bool covered = false;
-            for (int h = first + 1; h < end; h++)
+            for (int h = first; h < end; h++)
             {
                 if (IsHuman(h) && Vec2.DistanceSq(players[h].Pos, o.Pos) < humanCover * humanCover)
                 {
@@ -675,8 +739,9 @@ public sealed partial class AiDirector : IAiDirector
 
             int pick = -1;
             float pickD2 = float.MaxValue;
-            for (int i = first + 1; i < end; i++)
+            for (int i = first; i < end; i++)
             {
+                // A keeper is never free: AssignRoles marks every footballer that is not AI outfield as taken.
                 if (_taken[i]) continue;
                 float d2 = Vec2.DistanceSq(players[i].Pos, o.Pos);
                 if (d2 < pickD2)
@@ -850,24 +915,31 @@ public sealed partial class AiDirector : IAiDirector
         int first = p.Team * _size;
         int end = first + _size;
 
+        int keeper = -1;
         float smallest = float.MaxValue;
-        for (int j = first + 1; j < end; j++)
+        for (int j = first; j < end; j++)
         {
             if (j == i) continue;
+            if (players[j].IsKeeper)
+            {
+                keeper = j;
+                continue;
+            }
+
             float angle = PassAngle(in p, in players[j], aimAngle);
             if (angle <= cone && angle < smallest) smallest = angle;
         }
 
         if (smallest == float.MaxValue)
         {
-            return first != i && PassAngle(in p, in players[first], aimAngle) <= cone ? first : -1;
+            return keeper >= 0 && PassAngle(in p, in players[keeper], aimAngle) <= cone ? keeper : -1;
         }
 
         int best = -1;
         float bestD2 = float.MaxValue;
-        for (int j = first + 1; j < end; j++)
+        for (int j = first; j < end; j++)
         {
-            if (j == i) continue;
+            if (j == i || players[j].IsKeeper) continue;
             float angle = PassAngle(in p, in players[j], aimAngle);
             if (angle > cone || angle > smallest + tie) continue;
             float d2 = Vec2.DistanceSq(p.Pos, players[j].Pos);

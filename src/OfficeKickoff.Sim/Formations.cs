@@ -9,10 +9,14 @@ public readonly record struct FormationSpot(int Row, int RowCount, float Depth, 
 
 /// <summary>
 /// Formation catalogue. A formation is written defence-to-attack, e.g. "1-2-1", and only counts
-/// outfield footballers: every team also has one goalkeeper in slot 0.
+/// slots 1.. of a team: slot 0 is the goalkeeper or, in a match without goalkeepers, a sweeper
+/// who plays behind the formation (see <see cref="SweeperSpot"/>).
 /// </summary>
 public static class Formations
 {
+    /// <summary>Depth (0 = own goal line, 1 = halfway line) of the sweeper in a match without goalkeepers.</summary>
+    public const float SweeperDepth = 0.13f;
+
     private static readonly Dictionary<int, string[]> Catalog = new()
     {
         [3] = ["1-1", "2-0", "0-2"],
@@ -60,22 +64,36 @@ public static class Formations
     }
 
     /// <summary>
-    /// Home (kickoff) positions for a whole team, indexed by slot (0 = keeper). All positions are
-    /// in the team's own half. The away team is the home layout rotated 180 degrees.
+    /// The outfield spot slot 0 takes in a match without goalkeepers: a central sweeper close to
+    /// its own goal, behind the formation's first row (and counted as part of the defence).
     /// </summary>
-    public static Vec2[] HomePositions(string? name, int teamSize, int team, PitchGeometry pitch, Tuning tuning)
+    public static FormationSpot SweeperSpot(string? name, int teamSize)
+    {
+        int rows = Resolve(name, teamSize).Split('-').Length;
+        return new FormationSpot(0, rows, SweeperDepth, 0f);
+    }
+
+    /// <summary>
+    /// Home (kickoff) positions for a whole team, indexed by slot (0 = keeper, or the sweeper when
+    /// <paramref name="keepers"/> is false). All positions are in the team's own half. The away team
+    /// is the home layout rotated 180 degrees.
+    /// </summary>
+    public static Vec2[] HomePositions(string? name, int teamSize, int team, PitchGeometry pitch, Tuning tuning, bool keepers = true)
     {
         var spots = Spots(name, teamSize);
         var result = new Vec2[teamSize];
         float sign = PitchGeometry.AttackSign(team);
-        result[0] = new Vec2(-sign * (pitch.HalfW - tuning.Keeper.LineOffset), 0f);
-        for (int i = 0; i < spots.Length && i + 1 < teamSize; i++)
-        {
-            float x = -pitch.HalfW + spots[i].Depth * pitch.HalfW * 0.94f;
-            float y = spots[i].Lateral * pitch.HalfH;
-            result[i + 1] = new Vec2(sign * x, sign * y);
-        }
-
+        result[0] = keepers
+            ? new Vec2(-sign * (pitch.HalfW - tuning.Keeper.LineOffset), 0f)
+            : SpotPosition(SweeperSpot(name, teamSize), sign, pitch);
+        for (int i = 0; i < spots.Length && i + 1 < teamSize; i++) result[i + 1] = SpotPosition(spots[i], sign, pitch);
         return result;
+    }
+
+    private static Vec2 SpotPosition(FormationSpot spot, float sign, PitchGeometry pitch)
+    {
+        float x = -pitch.HalfW + spot.Depth * pitch.HalfW * 0.94f;
+        float y = spot.Lateral * pitch.HalfH;
+        return new Vec2(sign * x, sign * y);
     }
 }

@@ -54,9 +54,12 @@ export function createSettingsPanel({ catalog, actions }) {
   for (let n = LIMITS.minTeamSize; n <= LIMITS.maxTeamSize; n++) sizes.push(n);
   const levels = AI_LEVELS.map((label, value) => ({ value, label }));
 
+  const sizeOptions = (keepers) =>
+    sizes.map((n) => ({ value: n, label: String(n), title: keepers ? `${n}-a-side, keeper included` : `${n}-a-side, no keepers` }));
+  let sizeKeepers = true;
   const teamSize = segmented({
     label: 'Team size',
-    options: sizes.map((n) => ({ value: n, label: String(n), title: `${n}-a-side, keeper included` })),
+    options: sizeOptions(sizeKeepers),
     onChange: edit('teamSize'),
   });
   const minutes = slider({
@@ -80,8 +83,15 @@ export function createSettingsPanel({ catalog, actions }) {
     title: 'Level at full time: play on until someone scores. Off: the match ends as a draw.',
     onChange: edit('goldenGoal'),
   });
+  const keepers = toggle({
+    label: 'Goalkeepers',
+    title: 'An AI goalkeeper in each goal. Off: smaller goals, and every footballer plays outfield.',
+    onChange: edit('keepers'),
+  });
   const aiTeammates = segmented({ label: 'AI team-mates', options: levels, onChange: edit('aiTeammates') });
   const aiKeeper = segmented({ label: 'AI keepers', options: levels, onChange: edit('aiKeeper') });
+  // Without goalkeepers there is no keeper difficulty to choose.
+  const aiKeeperField = field('AI keepers', aiKeeper.el);
   const ballSpeed = slider({
     label: 'Ball speed',
     min: LIMITS.minSpeed,
@@ -133,8 +143,9 @@ export function createSettingsPanel({ catalog, actions }) {
       field('Match length', minutes.el),
       field('Score limit', scoreLimit.el),
       field('Tie-break', goldenGoal.el),
+      field('In goal', keepers.el),
       field('AI team-mates', aiTeammates.el),
-      field('AI keepers', aiKeeper.el),
+      aiKeeperField,
       field('Ball speed', ballSpeed.el),
       field('Game speed', gameSpeed.el),
       field('After a goal', h('div', { class: 'switch-pair' }, replays.el, celebrations.el), 'field-wide'),
@@ -159,12 +170,18 @@ export function createSettingsPanel({ catalog, actions }) {
 
   function paint() {
     const s = sync.local;
+    if (sizeKeepers !== s.keepers) {
+      sizeKeepers = s.keepers;
+      teamSize.setOptions(sizeOptions(sizeKeepers));
+    }
     teamSize.set(s.teamSize);
     minutes.set(s.minutes);
     scoreLimit.set(s.scoreLimit);
     goldenGoal.set(s.goldenGoal);
+    keepers.set(s.keepers);
     aiTeammates.set(s.aiTeammates);
     aiKeeper.set(s.aiKeeper);
+    setHidden(aiKeeperField, !s.keepers);
     ballSpeed.set(s.ballSpeed);
     gameSpeed.set(s.gameSpeed);
     replays.set(s.replays);

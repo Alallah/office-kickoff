@@ -283,7 +283,7 @@ const candDist = [];
 
 /**
  * The pass target rule, literally: team-mates within PassConeDeg of the aim direction; outfield
- * team-mates first, the own goalkeeper only when no outfield team-mate is in the cone; everyone
+ * team-mates first, the own goalkeeper (if any) only when no outfield team-mate is in the cone; everyone
  * within PassTieDeg of the best-aligned one is tied and the nearest of those gets the ball.
  * @param positions  {x, y} per footballer, indexed like the match
  * @param infos      MatchInit.players

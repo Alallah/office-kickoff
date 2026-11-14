@@ -25,8 +25,14 @@ public sealed class MatchSettings
     /// <summary>Id of the preset these settings came from, or "custom" once edited.</summary>
     public string Preset { get; set; } = "coffee";
 
-    /// <summary>Footballers per team including the AI keeper (3..7).</summary>
+    /// <summary>Footballers per team including slot 0, the AI keeper when <see cref="Keepers"/> is on (3..7).</summary>
     public int TeamSize { get; set; } = 5;
+
+    /// <summary>
+    /// True: slot 0 of each team is an AI goalkeeper. False: nobody is a keeper, slot 0 plays as a
+    /// deep outfield sweeper and the goals are narrower (PitchTuning.NoKeeperGoalScale).
+    /// </summary>
+    public bool Keepers { get; set; } = true;
 
     /// <summary>Match length in minutes (1..10).</summary>
     public int Minutes { get; set; } = 3;
@@ -40,7 +46,7 @@ public sealed class MatchSettings
     /// <summary>Difficulty of every AI outfield footballer (both teams).</summary>
     public AiLevel AiTeammates { get; set; } = AiLevel.Normal;
 
-    /// <summary>Difficulty of both AI goalkeepers.</summary>
+    /// <summary>Difficulty of both AI goalkeepers (unused when <see cref="Keepers"/> is off).</summary>
     public AiLevel AiKeeper { get; set; } = AiLevel.Normal;
 
     /// <summary>Multiplier on kick speeds (0.75..1.5).</summary>
@@ -62,6 +68,7 @@ public sealed class MatchSettings
         {
             Preset = Presets.Any(p => p.Id == Preset) || Preset == "custom" ? Preset : "custom",
             TeamSize = TeamSize is >= MinTeamSize and <= MaxTeamSize ? TeamSize : d.TeamSize,
+            Keepers = Keepers,
             Minutes = Minutes is >= MinMinutes and <= MaxMinutes ? Minutes : d.Minutes,
             ScoreLimit = ScoreLimit is >= 0 and <= MaxScoreLimit ? ScoreLimit : d.ScoreLimit,
             GoldenGoal = GoldenGoal,

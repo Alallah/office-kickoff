@@ -31,8 +31,8 @@
  * @typedef {Object} PlayerView
  * @property {number} i          index in the match (same as the snapshot / MatchInit.players)
  * @property {number} team       0 = home (attacks towards +x), 1 = away
- * @property {number} slot       0 = goalkeeper
- * @property {boolean} keeper
+ * @property {number} slot       0 = goalkeeper, or an outfield sweeper in a match without goalkeepers
+ * @property {boolean} keeper     the only test for "is a goalkeeper" (never the slot)
  * @property {string} name       roster name
  * @property {number} number     shirt number
  * @property {number} x @property {number} y     world position
